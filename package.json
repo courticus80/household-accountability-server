@@ -1,7 +1,7 @@
 {
-  "name": "household-accountability-server",
-  "version": "1.0.0",
-  "description": "AI-powered household task accountability for neurodivergent adults",
+  "name": "collaborative-home-server",
+  "version": "0.1.0",
+  "description": "Household coordination app for neurodivergent couples and roommates — AI-mediated shared standards, shared task visibility, weekly check-ins.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
