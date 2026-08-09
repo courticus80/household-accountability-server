@@ -71,6 +71,18 @@ const CATEGORIES = [
 const CATEGORY_KEYS = CATEGORIES.map(c => c.key);
 
 // ----------------------------------------------------------------------
+// Live-update version. Bump this any time public/index.html changes in a
+// way that matters (same mechanism as Brick Bank's OTA updates): the
+// native app shell ships with a copy of this HTML frozen at build time
+// with a BUNDLED_VERSION baked in; on launch it checks this endpoint, and
+// if the numbers don't match, prompts the user to load the current copy
+// straight from Railway instead of waiting on an App Store review cycle.
+// Only native-shell changes (permissions, new Capacitor plugins, etc.)
+// still require a real rebuild and resubmission.
+// ----------------------------------------------------------------------
+const CONTENT_VERSION = '2026.08.09.1';
+
+// ----------------------------------------------------------------------
 // Database setup — household/multi-person model.
 // ----------------------------------------------------------------------
 // One-time cleanup: this database previously held an earlier, unrelated
@@ -564,6 +576,10 @@ app.get('/api/checkins/needs-attention', authRequired, requireDb, async (req, re
     console.error('Needs-attention error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get('/api/version', (req, res) => {
+  res.json({ ok: true, version: CONTENT_VERSION });
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
