@@ -32,6 +32,13 @@ const CATEGORIES = [
       'Dishes pile up for a day or two before someone catches up.',
       'Countertop clutter is normal until a weekend reset.',
       'A deep clean happens about once a week — mess in between is fine.'
+    ],
+    starterTasks: [
+      { title: 'Wash and put away dishes', frequency: 'Daily' },
+      { title: 'Wipe down counters and stovetop', frequency: 'Daily' },
+      { title: 'Take out kitchen trash', frequency: 'Weekly' },
+      { title: 'Sweep or mop the floor', frequency: 'Weekly' },
+      { title: 'Clean out the fridge', frequency: 'Flexible' }
     ]
   },
   {
@@ -43,6 +50,13 @@ const CATEGORIES = [
       'Tidied every few days.',
       'Cleaned on a weekly schedule.',
       'Cleaned whenever someone notices it needs it.'
+    ],
+    starterTasks: [
+      { title: 'Clean toilet', frequency: 'Weekly' },
+      { title: 'Clean shower/tub', frequency: 'Weekly' },
+      { title: 'Wipe down sink and counter', frequency: 'Weekly' },
+      { title: 'Restock toilet paper and soap', frequency: 'Flexible' },
+      { title: 'Take out bathroom trash', frequency: 'Weekly' }
     ]
   },
   {
@@ -54,6 +68,13 @@ const CATEGORIES = [
       'Tidied every couple of days.',
       'Tidied once a week.',
       'A lived-in look is fine most of the time.'
+    ],
+    starterTasks: [
+      { title: 'Tidy shared living space', frequency: 'Daily' },
+      { title: 'Vacuum or sweep common areas', frequency: 'Weekly' },
+      { title: 'Take out household trash/recycling', frequency: 'Weekly' },
+      { title: 'Water the plants', frequency: 'Weekly' },
+      { title: 'Dust shelves and surfaces', frequency: 'Flexible' }
     ]
   },
   {
@@ -65,6 +86,12 @@ const CATEGORIES = [
       "The basket builds up for about a week before it's dealt with.",
       "The basket builds up until it's full or someone's out of something.",
       'A clean-pile/dirty-pile system works fine indefinitely.'
+    ],
+    starterTasks: [
+      { title: 'Wash a load of laundry', frequency: 'Weekly' },
+      { title: 'Fold and put away clean laundry', frequency: 'Weekly' },
+      { title: 'Change and wash bed sheets', frequency: 'Flexible' },
+      { title: 'Wash bath towels', frequency: 'Weekly' }
     ]
   }
 ];
@@ -80,7 +107,7 @@ const CATEGORY_KEYS = CATEGORIES.map(c => c.key);
 // Only native-shell changes (permissions, new Capacitor plugins, etc.)
 // still require a real rebuild and resubmission.
 // ----------------------------------------------------------------------
-const CONTENT_VERSION = '2026.08.09.1';
+const CONTENT_VERSION = '2026.08.09.2';
 
 // ----------------------------------------------------------------------
 // Database setup — household/multi-person model.
