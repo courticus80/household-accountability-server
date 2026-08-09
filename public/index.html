@@ -132,6 +132,16 @@
   .add-task{ display:flex; align-items:center; justify-content:center; gap:6px; padding:11px; border-radius:14px; border:1.5px dashed var(--border); color:var(--muted); font-size:0.8rem; font-weight:700; cursor:pointer; margin-top:4px; }
   .add-task:hover{ border-color:var(--primary); color:var(--primary); }
 
+  .starter-suggestions{ padding:4px 0 18px; }
+  .starter-intro{ font-size:0.82rem; color:var(--muted); line-height:1.5; margin-bottom:16px; }
+  .starter-group{ margin-bottom:16px; }
+  .starter-group-label{ font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--subtle); margin-bottom:8px; }
+  .starter-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .starter-chip{ display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:20px; border:1.5px solid var(--border); background:var(--surface); color:var(--text); font-size:0.8rem; font-weight:600; cursor:pointer; transition:border-color 0.15s, background 0.15s; }
+  .starter-chip:hover{ border-color:var(--primary); background:var(--primary-tint); }
+  .starter-chip.added{ border-color:var(--accent); background:var(--accent-tint); color:var(--accent-dark); cursor:default; }
+  .starter-chip .plus{ font-weight:800; }
+
   .add-form{ background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; display:none; }
   .add-form.show{ display:block; }
   select{ width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); font-family:inherit; font-size:0.85rem; margin-bottom:10px; }
@@ -349,7 +359,7 @@ const API = ''; // same origin
 // no App Store review needed for content-only changes. When this file is
 // simply being served by Railway directly (regular web use), the two
 // versions always match, so the banner never appears.
-const BUNDLED_VERSION = '2026.08.09.1';
+const BUNDLED_VERSION = '2026.08.09.2';
 const RAILWAY_ORIGIN = 'https://household-accountability-server-production.up.railway.app';
 
 async function checkForLiveUpdate(){
@@ -689,6 +699,8 @@ function renderFilters(){
 function renderDashboardBody(){
   const body = document.getElementById('dashboardBody');
   body.innerHTML = '';
+  const hadAnyTasks = state.tasks.length > 0;
+
   state.categories.forEach(cat=>{
     const std = state.standards.find(s=>s.category_key===cat.key);
     const catTasks = state.tasks.filter(t=>t.category_key===cat.key && (state.activeFilter==='all' || t.owner_id===state.activeFilter));
@@ -723,6 +735,62 @@ function renderDashboardBody(){
     });
     body.appendChild(group);
   });
+
+  renderStarterSuggestions(body, hadAnyTasks);
+}
+
+function renderStarterSuggestions(body, hadAnyTasks){
+  const existingTitles = new Set(state.tasks.map(t => (t.category_key + '::' + t.title.toLowerCase())));
+  const remaining = state.categories
+    .map(cat => ({
+      cat,
+      tasks: (cat.starterTasks || []).filter(st => !existingTitles.has(cat.key + '::' + st.title.toLowerCase()))
+    }))
+    .filter(entry => entry.tasks.length > 0);
+
+  if(remaining.length === 0) return;
+  if(state.activeFilter !== 'all') return; // suggestions add unassigned tasks; only show on the shared view
+
+  const wrap = document.createElement('div');
+  wrap.className = 'starter-suggestions';
+  wrap.innerHTML = `<div class="starter-intro">${hadAnyTasks ? 'A few more common household tasks you could add:' : "Nothing on the list yet. Here are some common household tasks to start with — tap any to add it. Skip whatever doesn't apply to your place."}</div>`;
+
+  remaining.forEach(({cat, tasks})=>{
+    const group = document.createElement('div');
+    group.className = 'starter-group';
+    const label = document.createElement('div');
+    label.className = 'starter-group-label';
+    label.textContent = cat.label;
+    group.appendChild(label);
+    const chips = document.createElement('div');
+    chips.className = 'starter-chips';
+    tasks.forEach(st=>{
+      const chip = document.createElement('div');
+      chip.className = 'starter-chip';
+      chip.innerHTML = `<span class="plus">+</span> ${st.title}`;
+      chip.onclick = ()=> addStarterTask(st, cat.key, chip);
+      chips.appendChild(chip);
+    });
+    group.appendChild(chips);
+    wrap.appendChild(group);
+  });
+
+  body.appendChild(wrap);
+}
+
+async function addStarterTask(starter, categoryKey, chipEl){
+  if(chipEl.classList.contains('added')) return;
+  chipEl.classList.add('added');
+  chipEl.innerHTML = `<span class="plus">✓</span> ${starter.title}`;
+  const data = await api('/api/tasks', {method:'POST', body: JSON.stringify({
+    title: starter.title,
+    categoryKey,
+    ownerId: null,
+    frequency: starter.frequency
+  })});
+  state.tasks.push(data.task);
+  renderMyWeek();
+  renderDashboardBody();
 }
 
 async function toggleTask(id){
