@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collaborative Home</title>
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#3f5a6b; --primary-dark:#2c4150; --primary-tint:#e6edf0;
+    --secondary:#c9a15c; --secondary-dark:#9c7a42; --secondary-tint:#f6ecd9;
+    --accent:#a94f37; --accent-dark:#7d392b; --accent-tint:#f2e0da;
+    --bg:#f5f2ec; --surface:#faf8f3; --surface-raised:#fefcf7;
+    --text:#201812; --muted:#7a6a58; --subtle:#a89880;
+    --border:rgba(32,24,18,0.08);
+    --shadow: 0 10px 30px rgba(32,24,18,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Atkinson Hyperlegible', sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:28px 16px; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; margin:0;}
+  .app{
+    width:100%; max-width:560px;
+    background:var(--surface); border-radius:24px; box-shadow:var(--shadow);
+    border:1px solid var(--border); overflow:hidden; min-height:640px;
+    display:flex; flex-direction:column;
+  }
+  .screen{ display:none; flex-direction:column; flex:1; padding:26px; animation:fadeIn 0.3s ease; }
+  .screen.active{ display:flex; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .eyebrow{ font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--secondary-dark); margin-bottom:8px; }
+  .title{ font-size:1.5rem; font-weight:700; line-height:1.15; margin-bottom:10px; }
+  .subtitle{ font-size:0.9rem; color:var(--muted); line-height:1.5; margin-bottom:20px; }
+  .spacer{ flex:1; }
+  .error-msg{ background:var(--accent-tint); color:var(--accent-dark); border-radius:10px; padding:10px 14px; font-size:0.8rem; margin-bottom:14px; display:none; }
+  .error-msg.show{ display:block; }
+
+  label.field-label{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); display:block; margin-bottom:6px; }
+  input[type="text"], input[type="email"], input[type="password"]{
+    width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--border);
+    background:var(--surface-raised); font-family:inherit; font-size:0.9rem; color:var(--text); margin-bottom:14px;
+  }
+  input:focus{ outline:none; border-color:var(--primary); }
+
+  .btn{ border:none; border-radius:14px; padding:14px 20px; font-family:'Atkinson Hyperlegible', sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; text-align:center; transition:transform 0.12s, box-shadow 0.12s; }
+  .btn:active{ transform:translateY(2px); }
+  .btn-primary{ background:var(--primary); color:#fff; box-shadow:0 4px 0 var(--primary-dark); }
+  .btn-primary:active{ box-shadow:0 2px 0 var(--primary-dark); }
+  .btn-accent{ background:var(--accent); color:#fff; box-shadow:0 4px 0 var(--accent-dark); }
+  .btn-accent:active{ box-shadow:0 2px 0 var(--accent-dark); }
+  .btn-ghost{ background:transparent; color:var(--muted); border:1.5px solid var(--border); box-shadow:none; }
+  .btn-ghost:hover{ border-color:var(--primary); color:var(--primary); }
+  .btn[disabled]{ opacity:0.4; cursor:not-allowed; }
+  .btn-row{ display:flex; gap:8px; }
+  .btn-row .btn{ flex:1; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .tab{ flex:1; text-align:center; padding:10px; border-radius:12px; font-size:0.78rem; font-weight:700; color:var(--muted); cursor:pointer; background:var(--surface-raised); border:1.5px solid var(--border); }
+  .tab.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+  .auth-pane{ display:none; }
+  .auth-pane.active{ display:block; }
+
+  .invite-box{ background:var(--secondary-tint); border-radius:14px; padding:16px; margin-bottom:18px; text-align:center; }
+  .invite-code{ font-family:'Fraunces', serif; font-weight:700; font-size:1.6rem; color:var(--secondary-dark); letter-spacing:0.1em; margin:4px 0; }
+
+  .handoff-avatar{ width:76px; height:76px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; font-weight:700; color:#fff; font-size:1.8rem; margin:0 auto 18px; }
+  .center{ text-align:center; }
+
+  .category-icon{ width:44px; height:44px; border-radius:12px; background:var(--primary-tint); display:flex; align-items:center; justify-content:center; margin-bottom:14px; flex-shrink:0; }
+  .category-icon svg{ width:22px; height:22px; stroke:var(--primary); fill:none; stroke-width:1.8; }
+
+  input[type="range"]{ width:100%; -webkit-appearance:none; height:8px; border-radius:6px; background:var(--border); margin:14px 0 6px; }
+  input[type="range"]::-webkit-slider-thumb{ -webkit-appearance:none; width:26px; height:26px; border-radius:50%; background:var(--secondary); border:3px solid var(--surface); box-shadow:0 2px 6px rgba(0,0,0,0.25); cursor:pointer; }
+  .slider-labels{ display:flex; justify-content:space-between; font-size:0.62rem; color:var(--subtle); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; }
+
+  .level-card{ background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:16px; margin-top:16px; }
+  .level-desc{ font-size:0.92rem; font-weight:600; line-height:1.4; }
+  .meter{ display:flex; gap:4px; margin-top:12px; }
+  .meter-seg{ flex:1; height:8px; border-radius:4px; background:var(--border); }
+  .meter-seg.filled{ background:var(--accent); }
+
+  .result-block{ background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px; }
+  .result-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .result-title{ font-weight:700; font-size:0.92rem; }
+  .result-desc{ font-size:0.8rem; color:var(--muted); line-height:1.45; }
+  .locked-badge{ display:inline-flex; align-items:center; gap:6px; background:var(--accent-tint); color:var(--accent-dark); font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:6px 12px; border-radius:20px; margin-bottom:16px; }
+
+  /* dashboard */
+  .header{ background:var(--primary); padding:22px 24px 20px; color:#fff; margin:-26px -26px 18px; }
+  .header-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .household-name{ font-family:'Fraunces', serif; font-weight:700; font-size:1.2rem; }
+  .household-sub{ font-size:0.68rem; opacity:0.8; text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; }
+  .header-actions{ display:flex; gap:10px; }
+  .icon-link{ font-size:0.68rem; color:rgba(255,255,255,0.8); background:rgba(255,255,255,0.12); border:none; border-radius:20px; padding:6px 12px; cursor:pointer; font-family:inherit; font-weight:700; }
+  .my-week-card{ background:rgba(255,255,255,0.1); border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:14px; }
+  .ring-label{ font-size:0.85rem; font-weight:700; }
+  .ring-sub{ font-size:0.68rem; opacity:0.8; margin-top:2px; }
+
+  .filters{ display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; }
+  .chip{ padding:8px 14px; border-radius:20px; background:var(--surface-raised); border:1.5px solid var(--border); font-size:0.78rem; font-weight:700; color:var(--muted); cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+  .chip.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .chip-dot{ width:8px; height:8px; border-radius:50%; }
+
+  .category-group{ margin-bottom:22px; }
+  .category-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .category-head .category-icon{ width:34px; height:34px; margin-bottom:0; }
+  .category-head .category-icon svg{ width:18px; height:18px; }
+  .category-title{ font-weight:700; font-size:0.95rem; }
+  .category-standard{ font-size:0.72rem; color:var(--muted); margin:2px 0 12px 44px; line-height:1.4; }
+
+  .task-item{ display:flex; align-items:center; gap:12px; background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+  .task-item.done{ background:var(--accent-tint); border-color:rgba(169,79,55,0.25); }
+  .check{ width:30px; height:30px; border-radius:10px; border:2px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:transform 0.15s, background 0.15s, border-color 0.15s; }
+  .check svg{ width:16px; height:16px; stroke:#fff; fill:none; stroke-width:3; opacity:0; }
+  .check.checked{ background:var(--accent); border-color:var(--accent); transform:scale(1.06); }
+  .check.checked svg{ opacity:1; }
+  .task-text{ flex:1; min-width:0; }
+  .task-title{ font-weight:700; font-size:0.88rem; }
+  .task-item.done .task-title{ color:var(--accent-dark); }
+  .task-sub{ font-size:0.72rem; color:var(--muted); margin-top:1px; display:flex; align-items:center; gap:6px; }
+  .owner-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .freq-pill{ font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:20px; background:var(--secondary-tint); color:var(--secondary-dark); flex-shrink:0; }
+
+  .add-task{ display:flex; align-items:center; justify-content:center; gap:6px; padding:11px; border-radius:14px; border:1.5px dashed var(--border); color:var(--muted); font-size:0.8rem; font-weight:700; cursor:pointer; margin-top:4px; }
+  .add-task:hover{ border-color:var(--primary); color:var(--primary); }
+
+  .add-form{ background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; display:none; }
+  .add-form.show{ display:block; }
+  select{ width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid var(--border); background:var(--surface); font-family:inherit; font-size:0.85rem; margin-bottom:10px; }
+
+  .footnote{ text-align:center; font-size:0.72rem; color:var(--subtle); padding:14px 0 0; line-height:1.5; }
+
+  .checkin-row{ background:var(--surface-raised); border:1.5px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .checkin-row .category-title{ margin-bottom:8px; }
+
+  /* live-update banner (native shell OTA check) */
+  .update-banner{
+    display:none; align-items:center; justify-content:space-between; gap:12px;
+    width:100%; max-width:560px; margin:0 0 12px; padding:12px 16px;
+    background:var(--accent); color:#fff; border-radius:14px;
+    font-size:0.8rem; font-weight:700; cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .update-banner.show{ display:flex; }
+  .update-banner span.sub{ display:block; font-size:0.68rem; font-weight:500; opacity:0.85; margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="update-banner" id="updateBanner" onclick="applyLiveUpdate()">
+  <div>
+    A new version is ready
+    <span class="sub">Tap to load it now</span>
+  </div>
+  <div>&#8635;</div>
+</div>
+
+<div class="app">
+
+  <!-- AUTH -->
+  <div class="screen active" data-screen="auth">
+    <img src="/assets/logo.png" alt="Collaborative Home" style="width:56px; height:auto; margin-bottom:14px;">
+    <div class="eyebrow">Collaborative Home</div>
+    <h1 class="title">Welcome</h1>
+    <p class="subtitle">Create a household, join one with an invite code, or log back in.</p>
+    <div class="error-msg" id="authError"></div>
+    <div class="tabs">
+      <div class="tab active" data-tab="create" onclick="switchAuthTab('create')">Create household</div>
+      <div class="tab" data-tab="join" onclick="switchAuthTab('join')">Join household</div>
+      <div class="tab" data-tab="login" onclick="switchAuthTab('login')">Log in</div>
+    </div>
+
+    <div class="auth-pane active" data-pane="create">
+      <label class="field-label">Household name</label>
+      <input type="text" id="createHouseholdName" placeholder="e.g. The Maple St. House">
+      <label class="field-label">Your name</label>
+      <input type="text" id="createName" placeholder="Your name">
+      <label class="field-label">Email</label>
+      <input type="email" id="createEmail" placeholder="you@example.com">
+      <label class="field-label">Password</label>
+      <input type="password" id="createPassword" placeholder="At least 8 characters">
+      <button class="btn btn-primary" style="width:100%" onclick="createHousehold()">Create household</button>
+    </div>
+
+    <div class="auth-pane" data-pane="join">
+      <label class="field-label">Invite code</label>
+      <input type="text" id="joinCode" placeholder="e.g. A1B2C3" style="text-transform:uppercase;">
+      <label class="field-label">Your name</label>
+      <input type="text" id="joinName" placeholder="Your name">
+      <label class="field-label">Email</label>
+      <input type="email" id="joinEmail" placeholder="you@example.com">
+      <label class="field-label">Password</label>
+      <input type="password" id="joinPassword" placeholder="At least 8 characters">
+      <button class="btn btn-primary" style="width:100%" onclick="joinHousehold()">Join household</button>
+    </div>
+
+    <div class="auth-pane" data-pane="login">
+      <label class="field-label">Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com">
+      <label class="field-label">Password</label>
+      <input type="password" id="loginPassword" placeholder="Your password">
+      <button class="btn btn-primary" style="width:100%" onclick="login()">Log in</button>
+    </div>
+  </div>
+
+  <!-- INVITE (shown right after creating a household) -->
+  <div class="screen" data-screen="invite">
+    <div class="eyebrow">Household created</div>
+    <h1 class="title">Invite your household</h1>
+    <p class="subtitle">Share this code with the other person (or people) in your household. They'll use it to join and set up their own profile.</p>
+    <div class="invite-box">
+      <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--secondary-dark); font-weight:700;">Invite code</div>
+      <div class="invite-code" id="inviteCodeDisplay"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="continueFromInvite()">Continue to standards setup</button>
+  </div>
+
+  <!-- ONBOARDING INTRO -->
+  <div class="screen" data-screen="onboarding-intro">
+    <div class="spacer"></div>
+    <div class="center">
+      <div class="handoff-avatar" id="introAvatar"></div>
+      <div class="eyebrow">Your turn</div>
+      <h1 class="title" id="introTitle"></h1>
+      <p class="subtitle">You'll rate your comfort level for a few shared spaces, privately. There are no wrong answers, and nothing is revealed until everyone in the household has finished.</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="startRating()">I'm ready</button>
+  </div>
+
+  <!-- RATING -->
+  <div class="screen" data-screen="rating">
+    <div class="eyebrow" id="ratingEyebrow">Category 1 of 4</div>
+    <div class="category-icon" id="categoryIcon"></div>
+    <h1 class="title" id="categoryTitle"></h1>
+    <p class="subtitle" id="categorySubtitle"></p>
+    <input type="range" min="1" max="5" step="1" value="3" id="levelSlider" oninput="onSliderChange()">
+    <div class="slider-labels"><span>Reset often</span><span>Reset eventually</span></div>
+    <div class="level-card">
+      <div class="level-desc" id="levelDesc"></div>
+      <div class="meter" id="levelMeter"></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="ratingNextBtn" onclick="nextCategory()">Next</button>
+  </div>
+
+  <!-- WAITING -->
+  <div class="screen" data-screen="waiting">
+    <div class="spacer"></div>
+    <div class="center">
+      <div class="handoff-avatar" style="background:var(--secondary);">…</div>
+      <h1 class="title">Nice work</h1>
+      <p class="subtitle" id="waitingSubtitle">Your ratings are in. Once everyone else in the household finishes theirs, your standards will be revealed here — no need to keep this open.</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" onclick="checkStandardsReady()">Check now</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="screen" data-screen="results">
+    <div class="eyebrow">Standards</div>
+    <div class="locked-badge">Standards locked</div>
+    <h1 class="title">Your household standard</h1>
+    <p class="subtitle">You landed here together. Revisit any of this in your weekly check-in if it's not working.</p>
+    <div id="resultsList"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="goToDashboard()">Go to dashboard</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" data-screen="dashboard">
+    <div class="header">
+      <div class="header-top">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="/assets/logo.png" alt="" style="width:32px; height:auto;">
+          <div>
+            <div class="household-name" id="dashHouseholdName"></div>
+            <div class="household-sub">This week · shared view</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="icon-link" onclick="goToCheckin()">Check in</button>
+          <button class="icon-link" onclick="logout()">Log out</button>
+        </div>
+      </div>
+      <div class="my-week-card" id="myWeekCard"></div>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div id="dashboardBody"></div>
+    <div class="add-form" id="addForm">
+      <label class="field-label">Task</label>
+      <input type="text" id="newTaskTitle" placeholder="e.g. Wipe down counters">
+      <label class="field-label">Category</label>
+      <select id="newTaskCategory"></select>
+      <label class="field-label">Who does this?</label>
+      <select id="newTaskOwner"></select>
+      <label class="field-label">How often?</label>
+      <select id="newTaskFreq">
+        <option>Daily</option><option>Weekly</option><option selected>Flexible</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="toggleAddForm(false)">Cancel</button>
+        <button class="btn btn-primary" onclick="submitNewTask()">Add task</button>
+      </div>
+    </div>
+    <div class="add-task" onclick="toggleAddForm(true)">+ Add a task</div>
+    <div class="footnote">Everyone can see what's done and what isn't. There's no approval step — checking something off is enough.</div>
+  </div>
+
+  <!-- CHECK-IN -->
+  <div class="screen" data-screen="checkin">
+    <div class="eyebrow">Weekly check-in</div>
+    <h1 class="title">How's it actually feeling?</h1>
+    <p class="subtitle">Rate how satisfied you are with each standard this week. Nothing here is graded — a low rating just means it's worth revisiting together.</p>
+    <div id="checkinList"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="submitCheckin()">Submit check-in</button>
+  </div>
+
+  <!-- CHECK-IN RESULT -->
+  <div class="screen" data-screen="checkin-result">
+    <div class="eyebrow">Weekly check-in</div>
+    <h1 class="title" id="checkinResultTitle">Thanks for checking in</h1>
+    <p class="subtitle" id="checkinResultSubtitle"></p>
+    <div id="checkinResultList"></div>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="goToDashboard()">Back to dashboard</button>
+  </div>
+
+</div>
+
+<script>
+const API = ''; // same origin
+
+// ---------- Live update (native shell OTA check) ----------
+// When this file is baked into the Capacitor app's native shell at build
+// time, BUNDLED_VERSION is frozen at whatever CONTENT_VERSION was on the
+// server that day. On every launch we ask Railway what's current; if it's
+// moved on, we show a banner and, on tap, hard-navigate to the live copy —
+// no App Store review needed for content-only changes. When this file is
+// simply being served by Railway directly (regular web use), the two
+// versions always match, so the banner never appears.
+const BUNDLED_VERSION = '2026.08.09.1';
+const RAILWAY_ORIGIN = 'https://household-accountability-server-production.up.railway.app';
+
+async function checkForLiveUpdate(){
+  try{
+    const res = await fetch(RAILWAY_ORIGIN + '/api/version');
+    const data = await res.json();
+    if(data.version && data.version !== BUNDLED_VERSION){
+      document.getElementById('updateBanner').classList.add('show');
+    }
+  }catch(e){
+    // offline or unreachable — fail silently, the bundled copy still works
+  }
+}
+
+function applyLiveUpdate(){
+  window.location.href = RAILWAY_ORIGIN + '/';
+}
+
+checkForLiveUpdate();
+
+const CATEGORY_ICONS = {
+  kitchen: '<svg viewBox="0 0 24 24"><path d="M4 3v7a3 3 0 003 3h1v8"/><path d="M9 3v10"/><path d="M15 3c-1.5 0-2 2-2 4s1 3 2 3 2-1 2-3-.5-4-2-4z"/><path d="M15 10v11"/></svg>',
+  bathroom: '<svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M5 12V5a2 2 0 012-2h2v3"/><path d="M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6"/><circle cx="8" cy="17" r="0.5"/></svg>',
+  living: '<svg viewBox="0 0 24 24"><path d="M4 18v-5a2 2 0 012-2h12a2 2 0 012 2v5"/><path d="M4 18h16"/><path d="M4 13V9a1 1 0 011-1h1"/><path d="M19 13V9a1 1 0 00-1-1h-1"/></svg>',
+  laundry: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><circle cx="7" cy="6" r="0.6"/><circle cx="10" cy="6" r="0.6"/></svg>'
+};
+const AVATAR_COLORS = ['#3f5a6b', '#c9a15c', '#a94f37', '#7a8f6e', '#8a5a68'];
+
+let state = {
+  token: localStorage.getItem('ch_token') || null,
+  me: null, household: null, members: [],
+  categories: [], standards: [], ratings: [],
+  ratingIndex: 0, myDraftRatings: {},
+  tasks: [], activeFilter: 'all',
+  checkinDraft: {}
+};
+
+function initials(name){ return (name||'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?'; }
+
+async function api(path, options={}){
+  const headers = Object.assign({'Content-Type':'application/json'}, options.headers||{});
+  if(state.token) headers['Authorization'] = 'Bearer ' + state.token;
+  const res = await fetch(API + path, Object.assign({}, options, {headers}));
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector('.screen[data-screen="'+name+'"]').classList.add('active');
+}
+
+function switchAuthTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  document.querySelectorAll('.auth-pane').forEach(p=>p.classList.toggle('active', p.dataset.pane===tab));
+}
+
+function showAuthError(msg){
+  const el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+function clearAuthError(){
+  document.getElementById('authError').classList.remove('show');
+}
+
+// ---------- Auth ----------
+async function createHousehold(){
+  clearAuthError();
+  try{
+    const data = await api('/api/households', {method:'POST', body: JSON.stringify({
+      householdName: document.getElementById('createHouseholdName').value.trim(),
+      name: document.getElementById('createName').value.trim(),
+      email: document.getElementById('createEmail').value.trim(),
+      password: document.getElementById('createPassword').value,
+      color: AVATAR_COLORS[0]
+    })});
+    setSession(data.token, data.user, data.household);
+    state.members = [data.user];
+    const catData = await api('/api/categories');
+    state.categories = catData.categories;
+    document.getElementById('inviteCodeDisplay').textContent = data.household.invite_code;
+    showScreen('invite');
+  }catch(e){ showAuthError(e.message); }
+}
+
+function continueFromInvite(){
+  goToOnboardingIntro();
+}
+
+async function joinHousehold(){
+  clearAuthError();
+  try{
+    const data = await api('/api/households/join', {method:'POST', body: JSON.stringify({
+      inviteCode: document.getElementById('joinCode').value.trim(),
+      name: document.getElementById('joinName').value.trim(),
+      email: document.getElementById('joinEmail').value.trim(),
+      password: document.getElementById('joinPassword').value,
+      color: AVATAR_COLORS[1]
+    })});
+    setSession(data.token, data.user, data.household);
+    await bootAfterAuth();
+  }catch(e){ showAuthError(e.message); }
+}
+
+async function login(){
+  clearAuthError();
+  try{
+    const data = await api('/api/auth/login', {method:'POST', body: JSON.stringify({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value
+    })});
+    setSession(data.token, data.user, null);
+    await bootAfterAuth();
+  }catch(e){ showAuthError(e.message); }
+}
+
+function setSession(token, user, household){
+  state.token = token;
+  localStorage.setItem('ch_token', token);
+  state.me = user;
+  if(household) state.household = household;
+}
+
+function logout(){
+  localStorage.removeItem('ch_token');
+  state = Object.assign(state, {token:null, me:null, household:null, members:[]});
+  showScreen('auth');
+}
+
+// ---------- Boot ----------
+async function bootAfterAuth(){
+  const meData = await api('/api/me');
+  state.me = meData.user;
+  state.household = meData.household;
+  state.members = meData.members;
+
+  const catData = await api('/api/categories');
+  state.categories = catData.categories;
+
+  await refreshStandardsAndDecideScreen();
+}
+
+// Used at login/boot time. A returning user whose household already has
+// locked standards goes straight to the dashboard — they've seen the reveal
+// before. Only an in-progress onboarding routes elsewhere.
+async function refreshStandardsAndDecideScreen(){
+  const { iHaveRatedAll, allStandardsLocked } = await loadStandardsState();
+
+  if(allStandardsLocked){
+    await goToDashboard();
+  } else if(iHaveRatedAll){
+    showWaitingScreen();
+  } else {
+    goToOnboardingIntro();
+  }
+}
+
+// Used right after a rating submission, so a freshly-locked standard gets
+// its "your household standard" reveal instead of jumping straight to the
+// dashboard.
+async function afterRatingSubmit(){
+  const { iHaveRatedAll, allStandardsLocked } = await loadStandardsState();
+
+  if(allStandardsLocked){
+    renderResults();
+  } else if(iHaveRatedAll){
+    showWaitingScreen();
+  } else {
+    goToOnboardingIntro();
+  }
+}
+
+async function loadStandardsState(){
+  const stdData = await api('/api/standards');
+  state.standards = stdData.standards;
+  state.ratings = stdData.ratings;
+
+  const myRatedKeys = new Set(state.ratings.filter(r=>r.user_id===state.me.id).map(r=>r.category_key));
+  const iHaveRatedAll = state.categories.every(c=>myRatedKeys.has(c.key));
+  const allStandardsLocked = state.categories.every(c=>state.standards.some(s=>s.category_key===c.key));
+  return { iHaveRatedAll, allStandardsLocked };
+}
+
+// ---------- Onboarding ----------
+function goToOnboardingIntro(){
+  const avatar = document.getElementById('introAvatar');
+  avatar.style.background = state.me.color;
+  avatar.textContent = initials(state.me.name);
+  document.getElementById('introTitle').textContent = state.me.name + ", let's set your standards";
+  showScreen('onboarding-intro');
+}
+
+function startRating(){
+  state.ratingIndex = 0;
+  state.myDraftRatings = {};
+  renderCategory();
+  showScreen('rating');
+}
+
+function renderCategory(){
+  const cat = state.categories[state.ratingIndex];
+  document.getElementById('ratingEyebrow').textContent = 'Category ' + (state.ratingIndex+1) + ' of ' + state.categories.length;
+  document.getElementById('categoryIcon').innerHTML = CATEGORY_ICONS[cat.key] || '';
+  document.getElementById('categoryTitle').textContent = cat.label;
+  document.getElementById('categorySubtitle').textContent = cat.prompt;
+  const existing = state.myDraftRatings[cat.key] || 3;
+  document.getElementById('levelSlider').value = existing;
+  renderLevel(existing);
+  document.getElementById('ratingNextBtn').textContent = (state.ratingIndex === state.categories.length-1) ? 'Finish' : 'Next';
+}
+
+function renderLevel(value){
+  const cat = state.categories[state.ratingIndex];
+  document.getElementById('levelDesc').textContent = cat.levels[value-1];
+  const meter = document.getElementById('levelMeter');
+  meter.innerHTML = '';
+  for(let i=1;i<=5;i++){
+    const seg = document.createElement('div');
+    seg.className = 'meter-seg' + (i<=value?' filled':'');
+    meter.appendChild(seg);
+  }
+}
+
+function onSliderChange(){
+  const value = parseInt(document.getElementById('levelSlider').value, 10);
+  renderLevel(value);
+  state.myDraftRatings[state.categories[state.ratingIndex].key] = value;
+}
+
+async function nextCategory(){
+  state.myDraftRatings[state.categories[state.ratingIndex].key] = parseInt(document.getElementById('levelSlider').value, 10);
+  if(state.ratingIndex < state.categories.length - 1){
+    state.ratingIndex++;
+    renderCategory();
+  } else {
+    await api('/api/standards/ratings', {method:'POST', body: JSON.stringify({ratings: state.myDraftRatings})});
+    await afterRatingSubmit();
+  }
+}
+
+function showWaitingScreen(){
+  const others = state.members.filter(m=>m.id !== state.me.id).map(m=>m.name);
+  document.getElementById('waitingSubtitle').textContent = others.length
+    ? "Your ratings are in. Waiting on " + others.join(', ') + " to finish theirs — check back any time."
+    : "Your ratings are in. Once someone else joins your household and rates, your standards will be revealed here.";
+  showScreen('waiting');
+}
+
+async function checkStandardsReady(){
+  await afterRatingSubmit();
+}
+
+function levelLabel(v){
+  return {1:'Very frequent',2:'Frequent',3:'Moderate',4:'Relaxed',5:'Very relaxed'}[v] || '';
+}
+
+function renderResults(){
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const std = state.standards.find(s=>s.category_key===cat.key);
+    if(!std) return;
+    const block = document.createElement('div');
+    block.className = 'result-block';
+    const header = document.createElement('div');
+    header.className = 'result-header';
+    header.innerHTML = '<div class="category-icon" style="margin:0;width:34px;height:34px;">'+CATEGORY_ICONS[cat.key].replace('viewBox','width="18" height="18" viewBox')+'</div><div class="result-title">'+cat.label+'</div>';
+    block.appendChild(header);
+    const desc = document.createElement('div');
+    desc.className = 'result-desc';
+    desc.innerHTML = '<strong>Standard: '+levelLabel(std.level)+'.</strong> ' + cat.levels[std.level-1];
+    block.appendChild(desc);
+    list.appendChild(block);
+  });
+  showScreen('results');
+}
+
+// ---------- Dashboard ----------
+async function goToDashboard(){
+  const stdData = await api('/api/standards');
+  state.standards = stdData.standards; state.ratings = stdData.ratings;
+  if(document.querySelector('.screen[data-screen="results"]') && !document.querySelector('.screen[data-screen="dashboard"].active')){
+    // if arriving right after onboarding completion, show the reveal first
+  }
+  const taskData = await api('/api/tasks');
+  state.tasks = taskData.tasks;
+  document.getElementById('dashHouseholdName').textContent = state.household ? state.household.name : '';
+  renderMyWeek(); renderFilters(); renderDashboardBody(); populateAddForm();
+  showScreen('dashboard');
+}
+
+function memberById(id){ return state.members.find(m=>m.id===id); }
+
+// Deliberately shows only the logged-in person's own progress — not a
+// side-by-side comparison with their partner. Shared visibility of tasks
+// still lives in the filter chips and category lists below; this card is
+// just your own, so it doesn't read as a scoreboard.
+function renderMyWeek(){
+  const card = document.getElementById('myWeekCard');
+  const mine = state.tasks.filter(t=>t.owner_id===state.me.id);
+  const doneCount = mine.filter(t=>t.done).length;
+
+  if(!mine.length){
+    card.innerHTML = `<div><div class="ring-label">Your week</div><div class="ring-sub">Nothing assigned to you yet — add a task below whenever you're ready.</div></div>`;
+    return;
+  }
+
+  const pct = Math.round((doneCount/mine.length)*100);
+  const r=18, c=2*Math.PI*r, offset = c-(pct/100)*c;
+  card.innerHTML = `
+    <svg width="44" height="44">
+      <circle cx="22" cy="22" r="${r}" stroke="rgba(255,255,255,0.25)" stroke-width="4" fill="none"/>
+      <circle cx="22" cy="22" r="${r}" stroke="#fff" stroke-width="4" fill="none" stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 22 22)"/>
+    </svg>
+    <div><div class="ring-label">Your week</div><div class="ring-sub">${doneCount} of ${mine.length} done — no need to compare it to anyone else's</div></div>
+  `;
+}
+
+function renderFilters(){
+  const wrap = document.getElementById('filters');
+  wrap.innerHTML = '';
+  const allChip = document.createElement('div');
+  allChip.className = 'chip' + (state.activeFilter==='all'?' active':'');
+  allChip.textContent = 'All tasks';
+  allChip.onclick = ()=>{ state.activeFilter='all'; renderFilters(); renderDashboardBody(); };
+  wrap.appendChild(allChip);
+  state.members.forEach(m=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.activeFilter===m.id?' active':'');
+    chip.innerHTML = `<span class="chip-dot" style="background:${m.color}"></span>${m.name}`;
+    chip.onclick = ()=>{ state.activeFilter=m.id; renderFilters(); renderDashboardBody(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderDashboardBody(){
+  const body = document.getElementById('dashboardBody');
+  body.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const std = state.standards.find(s=>s.category_key===cat.key);
+    const catTasks = state.tasks.filter(t=>t.category_key===cat.key && (state.activeFilter==='all' || t.owner_id===state.activeFilter));
+    if(catTasks.length===0) return;
+    const group = document.createElement('div');
+    group.className = 'category-group';
+    const head = document.createElement('div');
+    head.className = 'category-head';
+    head.innerHTML = `<div class="category-icon">${CATEGORY_ICONS[cat.key]}</div><div class="category-title">${cat.label}</div>`;
+    group.appendChild(head);
+    const standardText = document.createElement('div');
+    standardText.className = 'category-standard';
+    standardText.textContent = std ? ('Standard: ' + cat.levels[std.level-1]) : 'Standard not set yet.';
+    group.appendChild(standardText);
+
+    catTasks.forEach(task=>{
+      const owner = task.owner_id ? memberById(task.owner_id) : null;
+      const item = document.createElement('div');
+      item.className = 'task-item' + (task.done ? ' done':'');
+      const check = document.createElement('div');
+      check.className = 'check' + (task.done ? ' checked':'');
+      check.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>';
+      check.onclick = ()=> toggleTask(task.id);
+      const text = document.createElement('div');
+      text.className = 'task-text';
+      text.innerHTML = `<div class="task-title">${task.title}</div><div class="task-sub">${owner ? '<span class="owner-dot" style=\"background:'+owner.color+'\"></span>'+owner.name : 'Either of you'}</div>`;
+      const pill = document.createElement('div');
+      pill.className = 'freq-pill';
+      pill.textContent = task.frequency;
+      item.appendChild(check); item.appendChild(text); item.appendChild(pill);
+      group.appendChild(item);
+    });
+    body.appendChild(group);
+  });
+}
+
+async function toggleTask(id){
+  const data = await api('/api/tasks/' + id + '/toggle', {method:'PUT'});
+  const idx = state.tasks.findIndex(t=>t.id===id);
+  state.tasks[idx] = data.task;
+  renderMyWeek(); renderDashboardBody();
+}
+
+function populateAddForm(){
+  const catSel = document.getElementById('newTaskCategory');
+  catSel.innerHTML = state.categories.map(c=>`<option value="${c.key}">${c.label}</option>`).join('');
+  const ownerSel = document.getElementById('newTaskOwner');
+  ownerSel.innerHTML = '<option value="">Either of you</option>' + state.members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+}
+
+function toggleAddForm(show){
+  document.getElementById('addForm').classList.toggle('show', show);
+  if(show) document.getElementById('newTaskTitle').focus();
+}
+
+async function submitNewTask(){
+  const title = document.getElementById('newTaskTitle').value.trim();
+  if(!title) return;
+  const data = await api('/api/tasks', {method:'POST', body: JSON.stringify({
+    title,
+    categoryKey: document.getElementById('newTaskCategory').value,
+    ownerId: document.getElementById('newTaskOwner').value || null,
+    frequency: document.getElementById('newTaskFreq').value
+  })});
+  state.tasks.push(data.task);
+  document.getElementById('newTaskTitle').value = '';
+  toggleAddForm(false);
+  renderMyWeek(); renderDashboardBody();
+}
+
+// ---------- Check-in ----------
+function goToCheckin(){
+  state.checkinDraft = {};
+  const list = document.getElementById('checkinList');
+  list.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const std = state.standards.find(s=>s.category_key===cat.key);
+    const row = document.createElement('div');
+    row.className = 'checkin-row';
+    row.innerHTML = `
+      <div class="category-title">${cat.label}</div>
+      <div class="result-desc" style="margin-bottom:8px;">${std ? cat.levels[std.level-1] : 'No standard set yet.'}</div>
+      <input type="range" min="1" max="5" step="1" value="3" data-cat="${cat.key}" oninput="onCheckinSlide(this)">
+      <div class="slider-labels"><span>Not working</span><span>Working great</span></div>
+    `;
+    list.appendChild(row);
+    state.checkinDraft[cat.key] = 3;
+  });
+  showScreen('checkin');
+}
+
+function onCheckinSlide(el){
+  state.checkinDraft[el.dataset.cat] = parseInt(el.value, 10);
+}
+
+async function submitCheckin(){
+  await api('/api/checkins', {method:'POST', body: JSON.stringify({ratings: state.checkinDraft})});
+  const data = await api('/api/checkins/needs-attention');
+  const list = document.getElementById('checkinResultList');
+  list.innerHTML = '';
+  if(data.categories.length){
+    document.getElementById('checkinResultSubtitle').textContent = "One or more categories aren't feeling great — worth revisiting together.";
+    data.categories.forEach(key=>{
+      const cat = state.categories.find(c=>c.key===key);
+      const block = document.createElement('div');
+      block.className = 'result-block';
+      block.innerHTML = `<div class="result-title">${cat.label}</div><div class="result-desc">Someone rated this low this week. Head back into standards setup for this category when you're both ready to renegotiate.</div>`;
+      list.appendChild(block);
+    });
+  } else {
+    document.getElementById('checkinResultSubtitle').textContent = "Everything's feeling good this week.";
+  }
+  showScreen('checkin-result');
+}
+
+// ---------- Boot on load ----------
+(async function boot(){
+  if(!state.token){ showScreen('auth'); return; }
+  try{
+    await bootAfterAuth();
+  }catch(e){
+    logout();
+  }
+})();
+</script>
+
+</body>
+</html>
