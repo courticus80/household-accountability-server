@@ -25,6 +25,7 @@ else console.warn('WARNING: DATABASE_URL not set');
 const CATEGORIES = [
   {
     key: 'kitchen', label: 'Kitchen',
+    needsStandard: true, appliesIf: null,
     prompt: "How quickly should the kitchen get reset after it's used?",
     levels: [
       'Dishes get washed and put away right after eating.',
@@ -43,6 +44,7 @@ const CATEGORIES = [
   },
   {
     key: 'bathroom', label: 'Bathroom',
+    needsStandard: true, appliesIf: null,
     prompt: 'How often should the bathroom get tidied?',
     levels: [
       'Wiped down after every use.',
@@ -61,6 +63,7 @@ const CATEGORIES = [
   },
   {
     key: 'living', label: 'Common Areas',
+    needsStandard: true, appliesIf: null,
     prompt: 'How tidy should shared living spaces stay day-to-day?',
     levels: [
       "Everything goes back in its place as soon as you're done with it.",
@@ -79,6 +82,7 @@ const CATEGORIES = [
   },
   {
     key: 'laundry', label: 'Laundry',
+    needsStandard: true, appliesIf: null,
     prompt: 'How should laundry get handled?',
     levels: [
       'Washed and put away within a day of getting dirty.',
@@ -93,9 +97,108 @@ const CATEGORIES = [
       { title: 'Change and wash bed sheets', frequency: 'Flexible' },
       { title: 'Wash bath towels', frequency: 'Weekly' }
     ]
+  },
+  // ------------------------------------------------------------------
+  // The categories below were added after incorporating ideas from a
+  // household's own "Complete Homekeeping Master List" reference sheet.
+  // Two kinds of categories now exist:
+  //   - needsStandard: true  -> same as the four above: privately rated,
+  //     locks a negotiated household standard. Used where "how tidy/how
+  //     often" is genuinely a matter of taste.
+  //   - needsStandard: false -> maintenance/admin categories where there's
+  //     no meaningful comfort scale to negotiate (nobody has a "vibe" about
+  //     smoke-detector testing) — these just carry starter tasks with
+  //     realistic cadences, no rating step, no locked standard.
+  // appliesIf ties a category to a household-profile flag (see the
+  // households.has_yard / has_garage / has_pets columns) — null means it
+  // always applies.
+  // ------------------------------------------------------------------
+  {
+    key: 'yard', label: 'Yard & Outdoor',
+    needsStandard: true, appliesIf: 'has_yard',
+    prompt: 'How tidy should the yard and outdoor space stay?',
+    levels: [
+      'Mowed, edged, and swept up right after each session.',
+      'Kept tidy on a weekly rhythm.',
+      'Kept reasonably tidy every couple of weeks.',
+      'A relaxed, lived-in yard is fine most of the season.',
+      'Outdoor upkeep happens whenever someone gets to it.'
+    ],
+    starterTasks: [
+      { title: 'Mow the lawn', frequency: 'Weekly' },
+      { title: 'Pull weeds from garden beds', frequency: 'Weekly' },
+      { title: 'Sweep walkways and patio', frequency: 'Weekly' },
+      { title: 'Trim hedges and shrubs', frequency: 'Monthly' },
+      { title: 'Rake leaves', frequency: 'Seasonal' },
+      { title: 'Check outdoor lighting', frequency: 'Monthly' }
+    ]
+  },
+  {
+    key: 'garage', label: 'Garage & Storage',
+    needsStandard: true, appliesIf: 'has_garage',
+    prompt: 'How organized should the garage or storage areas stay?',
+    levels: [
+      'Everything has a spot and goes back immediately.',
+      'Tidied up weekly.',
+      'Tidied up monthly.',
+      'A working mess is fine most of the time.',
+      'Organized only during occasional big cleanouts.'
+    ],
+    starterTasks: [
+      { title: 'Sweep garage floor', frequency: 'Monthly' },
+      { title: 'Put away tools and equipment', frequency: 'Weekly' },
+      { title: 'Sort items to donate or discard', frequency: 'Quarterly' },
+      { title: 'Test garage door safety features', frequency: 'Quarterly' }
+    ]
+  },
+  {
+    key: 'pets', label: 'Pet Care',
+    needsStandard: true, appliesIf: 'has_pets',
+    prompt: 'How should day-to-day pet care and pet areas get maintained?',
+    levels: [
+      'Pet messes and supplies get handled immediately.',
+      'Pet areas get reset daily.',
+      'Pet areas get reset every couple of days.',
+      'Pet areas get a once-a-week reset.',
+      "A relaxed approach — cleaned up when it's noticeably needed."
+    ],
+    starterTasks: [
+      { title: 'Feed and water pets', frequency: 'Daily' },
+      { title: 'Scoop litter box / clean pet area', frequency: 'Daily' },
+      { title: 'Walk the dog', frequency: 'Daily' },
+      { title: 'Wash pet bowls and bedding', frequency: 'Weekly' },
+      { title: 'Vacuum pet hair', frequency: 'Weekly' },
+      { title: 'Restock pet food and supplies', frequency: 'Flexible' }
+    ]
+  },
+  {
+    key: 'home_safety', label: 'Home Safety & Systems',
+    needsStandard: false, appliesIf: null,
+    starterTasks: [
+      { title: 'Test smoke and CO detectors', frequency: 'Monthly', ownerScope: 'both' },
+      { title: 'Check for leaks under sinks and appliances', frequency: 'Monthly', ownerScope: 'both' },
+      { title: 'Check fire extinguisher(s)', frequency: 'Quarterly', ownerScope: 'both' },
+      { title: 'Replace HVAC air filter', frequency: 'Quarterly', ownerScope: 'both' },
+      { title: 'Review emergency kit and supplies', frequency: 'Semiannual', ownerScope: 'both' },
+      { title: 'Flush the water heater', frequency: 'Annual', ownerScope: 'owner' },
+      { title: 'Clean gutters and downspouts', frequency: 'Seasonal', ownerScope: 'owner' }
+    ]
+  },
+  {
+    key: 'home_admin', label: 'Home Administration',
+    needsStandard: false, appliesIf: null,
+    starterTasks: [
+      { title: 'Sort and file mail', frequency: 'Weekly' },
+      { title: 'Pay bills and review accounts', frequency: 'Monthly' },
+      { title: 'Review household budget', frequency: 'Monthly' },
+      { title: 'Take inventory of cleaning and paper supplies', frequency: 'Monthly' },
+      { title: 'Schedule a donation drop-off', frequency: 'Quarterly' },
+      { title: 'Back up important documents', frequency: 'Annual' }
+    ]
   }
 ];
 const CATEGORY_KEYS = CATEGORIES.map(c => c.key);
+const STANDARD_CATEGORY_KEYS = CATEGORIES.filter(c => c.needsStandard).map(c => c.key);
 
 // ----------------------------------------------------------------------
 // Live-update version. Bump this any time public/index.html changes in a
@@ -107,7 +210,7 @@ const CATEGORY_KEYS = CATEGORIES.map(c => c.key);
 // Only native-shell changes (permissions, new Capacitor plugins, etc.)
 // still require a real rebuild and resubmission.
 // ----------------------------------------------------------------------
-const CONTENT_VERSION = '2026.08.09.2';
+const CONTENT_VERSION = '2026.08.09.3';
 
 // ----------------------------------------------------------------------
 // Database setup — household/multi-person model.
@@ -219,6 +322,21 @@ async function initDb() {
     await pool.query(idx).catch(() => {});
   }
 
+  // households already existed in production before the home-profile
+  // questions were added, so CREATE TABLE IF NOT EXISTS above won't add
+  // these columns to that existing table — migrate them in explicitly.
+  // profile_set distinguishes "not asked yet" from "asked, all answered no".
+  const householdProfileColumns = [
+    `ALTER TABLE households ADD COLUMN IF NOT EXISTS has_yard BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE households ADD COLUMN IF NOT EXISTS has_garage BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE households ADD COLUMN IF NOT EXISTS has_pets BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE households ADD COLUMN IF NOT EXISTS is_renter BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE households ADD COLUMN IF NOT EXISTS profile_set BOOLEAN NOT NULL DEFAULT false`
+  ];
+  for (const stmt of householdProfileColumns) {
+    await pool.query(stmt);
+  }
+
   console.log('Database tables ready');
 }
 
@@ -279,8 +397,10 @@ function mondayOf(date) {
   return d.toISOString().slice(0, 10);
 }
 
+const HOUSEHOLD_COLUMNS = 'id, name, invite_code, created_at, has_yard, has_garage, has_pets, is_renter, profile_set';
+
 async function loadHouseholdPayload(householdId) {
-  const household = (await pool.query('SELECT id, name, invite_code, created_at FROM households WHERE id = $1', [householdId])).rows[0];
+  const household = (await pool.query(`SELECT ${HOUSEHOLD_COLUMNS} FROM households WHERE id = $1`, [householdId])).rows[0];
   const members = (await pool.query('SELECT id, name, color, email FROM users WHERE household_id = $1 ORDER BY created_at ASC', [householdId])).rows;
   return { household, members };
 }
@@ -309,7 +429,7 @@ app.post('/api/households', rateLimit, requireDb, async (req, res) => {
     }
 
     const household = (await pool.query(
-      'INSERT INTO households (name, invite_code) VALUES ($1, $2) RETURNING id, name, invite_code',
+      `INSERT INTO households (name, invite_code) VALUES ($1, $2) RETURNING ${HOUSEHOLD_COLUMNS}`,
       [householdName, inviteCode]
     )).rows[0];
 
@@ -336,7 +456,7 @@ app.post('/api/households/join', rateLimit, requireDb, async (req, res) => {
   }
   try {
     const household = (await pool.query(
-      'SELECT id, name, invite_code FROM households WHERE invite_code = $1',
+      `SELECT ${HOUSEHOLD_COLUMNS} FROM households WHERE invite_code = $1`,
       [inviteCode.toUpperCase()]
     )).rows[0];
     if (!household) return res.status(404).json({ error: 'No household found for that invite code' });
@@ -398,6 +518,29 @@ app.get('/api/me', authRequired, requireDb, async (req, res) => {
   }
 });
 
+// A handful of yes/no questions about the home itself (yard? garage? pets?
+// rent or own?), asked once per household during onboarding, right after
+// the invite step. Determines which of the optional categories
+// (yard/garage/pets) show up at all, and trims landlord-responsibility
+// tasks out of Home Safety & Systems for renters. Whoever gets to this
+// screen first (creator or a joining member) sets it for the household.
+app.post('/api/households/profile', authRequired, requireDb, async (req, res) => {
+  const { hasYard, hasGarage, hasPets, isRenter } = req.body;
+  try {
+    const me = (await pool.query('SELECT household_id FROM users WHERE id = $1', [req.userId])).rows[0];
+    if (!me) return res.status(404).json({ error: 'User not found' });
+    const household = (await pool.query(
+      `UPDATE households SET has_yard = $1, has_garage = $2, has_pets = $3, is_renter = $4, profile_set = true
+       WHERE id = $5 RETURNING ${HOUSEHOLD_COLUMNS}`,
+      [!!hasYard, !!hasGarage, !!hasPets, !!isRenter, me.household_id]
+    )).rows[0];
+    res.json({ ok: true, household });
+  } catch (err) {
+    console.error('Household profile error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ----------------------------------------------------------------------
 // Standards (onboarding negotiation + ongoing reference)
 // ----------------------------------------------------------------------
@@ -419,7 +562,7 @@ app.post('/api/standards/ratings', authRequired, requireDb, async (req, res) => 
     const householdId = me.household_id;
 
     for (const [categoryKey, level] of Object.entries(ratings)) {
-      if (!CATEGORY_KEYS.includes(categoryKey)) continue;
+      if (!STANDARD_CATEGORY_KEYS.includes(categoryKey)) continue;
       const lvl = parseInt(level, 10);
       if (!(lvl >= 1 && lvl <= 5)) continue;
       await pool.query(
@@ -434,7 +577,7 @@ app.post('/api/standards/ratings', authRequired, requireDb, async (req, res) => 
     const memberCount = (await pool.query('SELECT COUNT(*)::int AS n FROM users WHERE household_id = $1', [householdId])).rows[0].n;
 
     const locked = [];
-    for (const categoryKey of CATEGORY_KEYS) {
+    for (const categoryKey of STANDARD_CATEGORY_KEYS) {
       const rows = (await pool.query(
         'SELECT level FROM standard_ratings WHERE household_id = $1 AND category_key = $2',
         [householdId, categoryKey]
@@ -567,7 +710,7 @@ app.post('/api/checkins', authRequired, requireDb, async (req, res) => {
     const weekStart = mondayOf(new Date());
 
     for (const [categoryKey, satisfaction] of Object.entries(ratings)) {
-      if (!CATEGORY_KEYS.includes(categoryKey)) continue;
+      if (!STANDARD_CATEGORY_KEYS.includes(categoryKey)) continue;
       const val = parseInt(satisfaction, 10);
       if (!(val >= 1 && val <= 5)) continue;
       await pool.query(
